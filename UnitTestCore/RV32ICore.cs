@@ -2,6 +2,7 @@
 using RISCVSharp.Core;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -14,7 +15,7 @@ namespace RISCVSharp.Core.Tests
         public void RV32ICoreInitializeTest()
         {
             RV32ICore core = new RV32ICore();
-            CoreRegister<uint> ra = typeof(RV32ICore).GetField("reg_ra", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(core) as CoreRegister<uint>;
+            CoreRegister<uint> ra = typeof(RV32ICore).GetField("abi_ra", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(core) as CoreRegister<uint>;
             CoreRegisterGroup<uint> rGroup = typeof(RV32ICore).GetField("coreRegisterGroup", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(core) as CoreRegisterGroup<uint>;
             ra.Value = 0x00100020;
             Assert.AreEqual(ra.Value, rGroup[1]);
@@ -24,16 +25,34 @@ namespace RISCVSharp.Core.Tests
         public void PrintCoreRegisterGroupStatusTest()
         {
             RV32ICore core = new RV32ICore();
-            Console.WriteLine(core.PrintCoreRegisterGroupStatus());
+            Console.WriteLine((core as IRVDebuggable).PrintCoreRegisterGroupStatus());
+        }
+
+        [TestMethod()]
+        public void RV32InstructionFetch32BTest()
+        {
+            RV32ICore core = new RV32ICore();
+
+            uint instruction = 0b0100000_00011_00010_000_00001_0110011U; // sub r1, r2, r3
+            ushort[] inst_16b = { (ushort)(instruction & 0x0000FFFFU), (ushort)((instruction & 0xFFFF0000U) >> 16) }; // 16-bit align, small endian
+            MemoryStream ms = new MemoryStream(new byte[] { (byte)((inst_16b[0] & 0xFF00) >> 8), (byte)(inst_16b[0] & 0x00FF), (byte)((inst_16b[1] & 0xFF00) >> 8), (byte)(inst_16b[1] & 0x00FF) });
+
+            CoreRegister<uint> pc = new CoreRegister<uint>(0x00000000U);
+            object[] args = new object[] { ms, pc, null };
+            MethodInfo decode = typeof(RV32ICore).GetMethod($"{nameof(RISCVSharp)}.{nameof(IRV32Fetch32B)}.Fetch32B", BindingFlags.Instance | BindingFlags.NonPublic);
+            decode.Invoke(core, args);
+
+            Console.WriteLine($"Instruction in memory = {instruction.ToString("X8")}, Instruction fetched = {((uint)args[2]).ToString("X8") }");
+            Assert.AreEqual((uint)args[2], instruction);
         }
 
         [TestMethod()]
         public void RV32InstructionDecoderTest()
         {
             RV32ICore core = new RV32ICore();
-            UInt32 instruction = 0b0100000_00011_00010_000_00001_0110011U; // sub r1, r2, r3
+            uint instruction = 0b0100000_00011_00010_000_00001_0110011U; // sub r1, r2, r3
             object[] args = new object[] { instruction, null, null, null, null, null, null };
-            MethodInfo decode = typeof(RV32ICore).GetMethod("InstructionDecodeRV32", BindingFlags.Static | BindingFlags.NonPublic);
+            MethodInfo decode = typeof(RV32ICore).GetMethod($"{nameof(RISCVSharp)}.{nameof(IRV32InstructionDecoder)}.InstructionDecode32B", BindingFlags.Instance | BindingFlags.NonPublic);
             decode.Invoke(core, args);
 
             Assert.AreEqual((uint)args[1], 0b0110011U); // Opcode

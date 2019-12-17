@@ -5,7 +5,7 @@ namespace RISCVSharp
 {
     namespace Core
     {
-        public class RV32ICore : IRISCVDebuggable, IRV32InstructionDecoder, IRV32Fetch32B
+        public class RV32ICore : RV32Core, IRVDebuggable, IRV32InstructionDecoder, IRV32Fetch32B
         {
             // Register group
             const int coreRegisterCount = 32;
@@ -68,14 +68,15 @@ namespace RISCVSharp
             /// <summary>
             /// Fetch and get 32-bit instruction
             /// </summary>
-            /// <param name=" instructionReader">Instruction memory/file stream binary reader</param>
+            /// <param name=" instructionStream">Instruction memory/file stream</param>
             /// <param name="pc">Program counter</param>
             /// <param name="instruction">Fetched instruction</param>
-            public void Fetch32B(BinaryReader instructionReader, CoreRegister<uint> pc, out uint instruction)
+            void IRV32Fetch32B.Fetch32B(Stream instructionStream, CoreRegister<uint> pc, out uint instruction)
             {
                 uint pc_addr = pc.Value & 0xFFFFFFFCU; // Simulate word-address memory address bus
-                instructionReader?.BaseStream.Seek(pc_addr, SeekOrigin.Begin);
-                byte[] bytes = instructionReader?.ReadBytes(4); // Simulate 32-bit memory data bus
+                instructionStream?.Seek(pc_addr, SeekOrigin.Begin);
+                byte[] bytes = new byte[4];
+                instructionStream?.Read(bytes, 0, 4); // Simulate 32-bit memory data bus
 
                 // 16-bit align, small endian
                 instruction = ((uint)bytes[0] << 8) | bytes[1]; // Lower 16-bit;
@@ -95,7 +96,7 @@ namespace RISCVSharp
             /// <param name="rs2">Register source II</param>
             /// <param name="rd">Register destination</param>
             /// <returns>Is the instruction 32-bit format correct?</returns>
-            private static bool InstructionDecodeRV32(
+            bool IRV32InstructionDecoder.InstructionDecode32B(
                 uint instruction, out uint opcode, out uint funct3, out uint funct7, out int rs1, out int rs2, out int rd)
             {
                 // Get the opcode
@@ -128,9 +129,9 @@ namespace RISCVSharp
 
             #region Debugger Interface
             /// <summary>
-            /// Print the core register group to string
+            /// Print all of the core register's status to string
             /// </summary>
-            public string PrintCoreRegisterGroupStatus()
+            string IRVDebuggable.PrintCoreRegisterGroupStatus()
             {
                 string result = "";
 
