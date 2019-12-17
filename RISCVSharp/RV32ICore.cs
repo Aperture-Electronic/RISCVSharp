@@ -8,7 +8,7 @@ namespace RISCVSharp
         public class RV32ICore : RV32Core, IRVDebuggable, IRV32InstructionDecoder, IRV32Fetch32B
         {
             // Register group
-            const int coreRegisterCount = 32;
+            private const int coreRegisterCount = 32;
             private readonly CoreRegisterGroup<uint> coreRegisterGroup;
 
             #region Specific function registers (linked to registers in the core group)
@@ -64,6 +64,36 @@ namespace RISCVSharp
                 reg_pc = new CoreRegister<uint>(0);
             }
 
+            #region User interface
+            /// <summary>
+            /// Instruction stream (simulated instruction bus)
+            /// </summary>
+            public Stream InstructionStream { get; private set; }
+
+            /// <summary>
+            /// Data stream (simulated data bus)
+            /// </summary>
+            public Stream DataStream { get; private set; }
+
+            /// <summary>
+            /// Connect a stream to the core as a data stream
+            /// </summary>
+            /// <param name="stream">Linked stream</param>
+            public override void LinkDataStream(Stream stream) => DataStream = stream;
+
+            /// <summary>
+            /// Connect a stream to the kernel as a data stream
+            /// </summary>
+            /// <param name="buffer">instruction buffer</param>
+            public override void OpenInstructionStream(byte[] buffer) => InstructionStream = new MemoryStream(buffer);
+
+            /// <summary>
+            /// Create an instruction stream from a file
+            /// </summary>
+            /// <param name="path">Instruction binary file</param>
+            public override void OpenInstructionStream(string path) => InstructionStream = new FileStream(path, FileMode.Open, FileAccess.Read);
+            #endregion
+
             #region Stage I: Fetch
             /// <summary>
             /// Fetch and get 32-bit instruction
@@ -75,12 +105,16 @@ namespace RISCVSharp
             {
                 uint pc_addr = pc.Value & 0xFFFFFFFCU; // Simulate word-address memory address bus
                 instructionStream?.Seek(pc_addr, SeekOrigin.Begin);
-                byte[] bytes = new byte[4];
-                instructionStream?.Read(bytes, 0, 4); // Simulate 32-bit memory data bus
+                byte[] buffer = new byte[4];
+                instructionStream?.Read(buffer, 0, 4); // Simulate 32-bit memory data bus
 
-                // 16-bit align, small endian
-                instruction = ((uint)bytes[0] << 8) | bytes[1]; // Lower 16-bit;
-                instruction += ((uint)bytes[2] << 24) | ((uint)bytes[3] << 16); // Higher 16-bit
+                // Little endian
+                if (!BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(buffer);
+                }
+
+                instruction = BitConverter.ToUInt32(buffer);
             }
             #endregion
 

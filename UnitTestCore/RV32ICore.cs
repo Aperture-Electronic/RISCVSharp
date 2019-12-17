@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace RISCVSharp.Core.Tests
 {
@@ -34,8 +35,8 @@ namespace RISCVSharp.Core.Tests
             RV32ICore core = new RV32ICore();
 
             uint instruction = 0b0100000_00011_00010_000_00001_0110011U; // sub r1, r2, r3
-            ushort[] inst_16b = { (ushort)(instruction & 0x0000FFFFU), (ushort)((instruction & 0xFFFF0000U) >> 16) }; // 16-bit align, small endian
-            MemoryStream ms = new MemoryStream(new byte[] { (byte)((inst_16b[0] & 0xFF00) >> 8), (byte)(inst_16b[0] & 0x00FF), (byte)((inst_16b[1] & 0xFF00) >> 8), (byte)(inst_16b[1] & 0x00FF) });
+            byte[] buffer = BitConverter.GetBytes(instruction);
+            MemoryStream ms = new MemoryStream(BitConverter.IsLittleEndian ? buffer : buffer.Reverse().ToArray());
 
             CoreRegister<uint> pc = new CoreRegister<uint>(0x00000000U);
             object[] args = new object[] { ms, pc, null };

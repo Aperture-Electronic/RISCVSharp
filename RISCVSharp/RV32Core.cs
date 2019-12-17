@@ -8,9 +8,6 @@ namespace RISCVSharp
 {
     public abstract class RV32Core
     {
-        private Stream instructionStream;
-        private readonly Stream dataStream;
-
         public abstract void OpenInstructionStream(byte[] buffer);
 
         public abstract void OpenInstructionStream(string path);
