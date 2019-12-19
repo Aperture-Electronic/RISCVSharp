@@ -248,7 +248,7 @@ namespace RISCVSharp
 
                     imme = (bit20 << 20) + (bit19_12 << 12) + (bit11 << 11) + (bit10_1 << 1);
                 }
-                else if ((opcode == 0b1100111) || (opcode == 0b0000011)) // For JALR, other instructions (I-type)
+                else if ((opcode == 0b1100111) || (opcode == 0b0000011) || (opcode == 0b0010011)) // For JALR, other instructions (I-type)
                 {
                     imme = (instruction & (~0b11111_111_11111_1111111U)) >> 20;
                 }
@@ -256,7 +256,7 @@ namespace RISCVSharp
                 {
                     uint bit12 = (instruction & 0x8000_0000U) >> 31;
                     uint bit10_5 = (instruction & 0x7E00_0000U) >> 25;
-                    uint bit4_1 = (instruction & 0x0000_1F00U) >> 8;
+                    uint bit4_1 = (instruction & 0x0000_0F00U) >> 8;
                     uint bit11 = (instruction & 0x0000_0080U) >> 7;
 
                     imme = (bit12 << 12) + (bit11 << 11) + (bit10_5 << 5) + (bit4_1 << 1);

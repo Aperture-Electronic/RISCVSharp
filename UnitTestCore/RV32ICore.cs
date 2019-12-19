@@ -89,8 +89,8 @@ namespace RISCVSharp.Core.Tests
         {
             RV32ICore core = new RV32ICore();
 
-            // Sub actions
-            Action<uint> SetInstruction = delegate (uint instruction)
+            // Sub action
+            void SetInstruction(uint instruction)
             {
                 core.ResetCore();
 
@@ -102,9 +102,10 @@ namespace RISCVSharp.Core.Tests
                 // Decode
                 MethodInfo decode = typeof(RV32ICore).GetMethod($"{nameof(RISCVSharp)}.{nameof(IRV32Decode)}.InstructionSplitDecode32B", BindingFlags.Instance | BindingFlags.NonPublic);
                 decode.Invoke(core, null);
-            };
+            }
 
-            Func<uint> GetImmediateDecoded = delegate
+            // Sub function
+            uint GetImmediateDecoded()
             {
                 // Immediate decode
                 MethodInfo immeDecode = typeof(RV32ICore).GetMethod($"RV32IImmediateDecode", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -113,16 +114,18 @@ namespace RISCVSharp.Core.Tests
                 FieldInfo imme = typeof(RV32ICore).GetField("decodeImmeRegister", BindingFlags.Instance | BindingFlags.NonPublic);
                 CoreRegister<uint> ireg = imme.GetValue(core) as CoreRegister<uint>;
                 return ireg.Value;
-            };
+            }
 
             // U-type instructions
             // lui x1, 0x831F3000
-            SetInstruction(0b00001_0110111U + (0x831F3000U & 0xFFFFF000U));
-            Assert.AreEqual(GetImmediateDecoded(), 0x831F3000U);
+            uint lui = 0x831F3000U;
+            SetInstruction(0b00001_0110111U + (lui & 0xFFFFF000U));
+            Assert.AreEqual(GetImmediateDecoded(), lui);
 
             // auipc x1, 0x6714F000
-            SetInstruction(0b00001_0010111U + (0x6714F000U & 0xFFFFF000U));
-            Assert.AreEqual(GetImmediateDecoded(), 0x6714F000U);
+            uint auipc = 0x6714F000U;
+            SetInstruction(0b00001_0010111U + (auipc & 0xFFFFF000U));
+            Assert.AreEqual(GetImmediateDecoded(), auipc);
 
             // J-type instruction
             // jal x1, 0x1CDF30
@@ -132,7 +135,34 @@ namespace RISCVSharp.Core.Tests
             uint jal_11 = (jal & 0x00800U) >> 11;
             uint jal_19_12 = (jal & 0xFF000U) >> 12;
             SetInstruction(0b00001_1101111U + (((jal_20 << 19) + (jal_10_1 << 9) + (jal_11 << 8) + jal_19_12) << 12));
-            Assert.AreEqual(GetImmediateDecoded(), 0x1CDF30U);
+            Assert.AreEqual(GetImmediateDecoded(), jal);
+
+            // I-type instructions
+            // jalr x1, x2, 0x7D9
+            uint jalr = 0x7D9U;
+            SetInstruction(0b00010_000_00001_1100111U + (jalr << 20));
+            Assert.AreEqual(GetImmediateDecoded(), jalr);
+
+            // lw x1, x2, 0x7D9
+            uint lw = 0x7D9U;
+            SetInstruction(0b00010_010_00001_0000011U + (lw<< 20));
+            Assert.AreEqual(GetImmediateDecoded(), lw);
+
+            // addi x1, x2, 0x7D9
+            uint addi = 0x7D9U;
+            SetInstruction(0b00010_000_00001_0010011U + (addi << 20));
+            Assert.AreEqual(GetImmediateDecoded(), addi);
+
+            // B-type instruction
+            // beq x1, x2, 0xC4E
+            uint beq = 0xC4EU;
+            uint beq_12 = (beq & 0x800U) >> 12;
+            uint beq_10_5 = (beq & 0x3E0U) >> 5;
+            uint beq_4_1 = (beq & 0x01EU) >> 1;
+            uint beq_11 = (beq & 0x400U) >> 11;
+
+            SetInstruction(0b00010_00001_000_00000_1100011U + (beq_12 << 31) + (beq_10_5 << 25) + (beq_4_1 << 8) + (beq_11 << 7));
+            Assert.AreEqual(GetImmediateDecoded(), beq);
         }
     }
 }
