@@ -12,6 +12,10 @@ namespace RISCVSharp
 
         public abstract void OpenInstructionStream(string path);
 
-        public abstract void LinkDataStream(Stream link);
+        public abstract void LinkInstructionStream(Stream stream);
+
+        public abstract void LinkDataStream(Stream stream);
+
+        public abstract void ResetCore();
     }
 }
