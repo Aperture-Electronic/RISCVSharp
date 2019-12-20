@@ -244,7 +244,7 @@ namespace RISCVSharp
                     uint bit20 = (instruction & 0x8000_0000U) >> 31;
                     uint bit10_1 = (instruction & 0x7FE0_0000U) >> 21;
                     uint bit11 = (instruction & 0x0010_0000U) >> 20;
-                    uint bit19_12 = (instruction & 0x000F_FFFFU) >> 12;
+                    uint bit19_12 = (instruction & 0x000F_F000U) >> 12;
 
                     imme = (bit20 << 20) + (bit19_12 << 12) + (bit11 << 11) + (bit10_1 << 1);
                 }
@@ -273,6 +273,80 @@ namespace RISCVSharp
                 decodeImmeRegister.Value = imme;
             }
 
+            /// <summary>
+            /// Opcode types of RV32I core
+            /// </summary>
+            private enum RV32IOpcodeType
+            {
+                LUI,
+                AUIPC,
+                JAL,
+                JALR,
+                BXX,
+                LXX,
+                SX,
+                AI,
+                A,
+                FENCE,
+                ECEB,
+                Undefined
+            }
+
+            RV32IOpcodeType decodeOpcodeType;
+
+            /// <summary>
+            /// Decode the instruction by opcode
+            /// </summary>
+            private void RV32IOpcodeDecode()
+            {
+                // Get opcode
+                uint opcode = decodeOpcodeRegister.Value;
+
+                switch(opcode)
+                {
+                    case 0b0110111U: // LUI
+                        decodeOpcodeType = RV32IOpcodeType.LUI;
+                        break;
+                    case 0b0010111U: // AUIPC
+                        decodeOpcodeType = RV32IOpcodeType.AUIPC;
+                        break;
+                    case 0b1101111U: // JAL
+                        decodeOpcodeType = RV32IOpcodeType.JAL;
+                        break;
+                    case 0b1100111U: // JALR
+                        decodeOpcodeType = RV32IOpcodeType.JALR;
+                        break;
+                    case 0b1100011U: // B__
+                        decodeOpcodeType = RV32IOpcodeType.BXX;
+                        break;
+                    case 0b0000011U: // L__
+                        decodeOpcodeType = RV32IOpcodeType.LXX;
+                        break;
+                    case 0b0100011U: // S_
+                        decodeOpcodeType = RV32IOpcodeType.SX;
+                        break;
+                    case 0b0010011U: // Calculation instructions (/w immediate) ___I
+                        decodeOpcodeType = RV32IOpcodeType.AI;
+                        break;
+                    case 0b0110011U: // Calculation instructions
+                        decodeOpcodeType = RV32IOpcodeType.A;
+                        break;
+                    case 0b0001111U: // FENCE
+                        decodeOpcodeType = RV32IOpcodeType.FENCE;
+                        break;
+                    case 0b1110011U: // ECALL/EBREAK
+                        decodeOpcodeType = RV32IOpcodeType.ECEB;
+                        break;
+                    default:
+                        decodeOpcodeType = RV32IOpcodeType.Undefined;
+                        break;
+                }
+            }
+
+            private void RV32IFunct3Decode()
+            {
+
+            }
             #endregion
 
             #region Debugger Interface

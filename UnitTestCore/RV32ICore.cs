@@ -143,26 +143,35 @@ namespace RISCVSharp.Core.Tests
             SetInstruction(0b00010_000_00001_1100111U + (jalr << 20));
             Assert.AreEqual(GetImmediateDecoded(), jalr);
 
-            // lw x1, x2, 0x7D9
-            uint lw = 0x7D9U;
+            // lw x1, x2, 0x6C2
+            uint lw = 0x6C2U;
             SetInstruction(0b00010_010_00001_0000011U + (lw<< 20));
             Assert.AreEqual(GetImmediateDecoded(), lw);
 
-            // addi x1, x2, 0x7D9
-            uint addi = 0x7D9U;
+            // addi x1, x2, 0x5BF
+            uint addi = 0x5BFU;
             SetInstruction(0b00010_000_00001_0010011U + (addi << 20));
             Assert.AreEqual(GetImmediateDecoded(), addi);
 
             // B-type instruction
-            // beq x1, x2, 0xC4E
-            uint beq = 0xC4EU;
-            uint beq_12 = (beq & 0x800U) >> 12;
-            uint beq_10_5 = (beq & 0x3E0U) >> 5;
+            // beq x1, x2, 0x1C4E
+            uint beq = 0x1C4EU;
+            uint beq_12 = (beq & 0x1000U) >> 12;
+            uint beq_10_5 = (beq & 0x7E0U) >> 5;
             uint beq_4_1 = (beq & 0x01EU) >> 1;
-            uint beq_11 = (beq & 0x400U) >> 11;
+            uint beq_11 = (beq & 0x800U) >> 11;
 
             SetInstruction(0b00010_00001_000_00000_1100011U + (beq_12 << 31) + (beq_10_5 << 25) + (beq_4_1 << 8) + (beq_11 << 7));
             Assert.AreEqual(GetImmediateDecoded(), beq);
+
+            // S-type instruction
+            // sb x1, x2, 0xD8A
+            uint sb = 0xD8AU;
+            uint sb_11_5 = (sb & 0xFE0) >> 5;
+            uint sb_4_0 = sb & 0x01F;
+
+            SetInstruction(0b00010_00001_000_00000_0100011U + (sb_11_5 << 25) + (sb_4_0 << 7));
+            Assert.AreEqual(GetImmediateDecoded(), sb);
         }
     }
 }
